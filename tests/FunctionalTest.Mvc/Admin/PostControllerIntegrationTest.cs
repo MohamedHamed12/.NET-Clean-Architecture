@@ -34,7 +34,7 @@ namespace FunctionalTest.Mvc.Admin
             response.EnsureSuccessStatusCode();
             var responseString = await response.Content.ReadAsStringAsync();
             var exists = responseString.Contains("Successfully saved post");
-            Assert.AreEqual(true, exists);
+            Assert.That(true, Is.EqualTo(exists));
         }
     }
 }

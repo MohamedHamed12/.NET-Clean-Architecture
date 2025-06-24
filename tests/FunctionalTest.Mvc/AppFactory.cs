@@ -1,29 +1,112 @@
-﻿using System;
-using System.Linq;
-using Infrastructure.Identity.Context;
+﻿using Infrastructure.Identity.Context;
 using Infrastructure.Identity.Seeds;
 using Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.Linq;
 using Web.Mvc;
 
 namespace FunctionalTest.Mvc
 {
     public class AppFactory : WebApplicationFactory<Startup>
     {
+        private SqliteConnection _identityConnection;
+        private SqliteConnection _appConnection;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureServices(services =>
             {
-                SetUpMoqDataBase(services);
-                //services.AddScoped<ICurrentUser, CurrentUserTest>();
+                // *** ULTIMATE FIX: Aggressively remove ANY service related to EntityFrameworkCore
+                // or your specific DbContexts before re-configuring them for SQLite. ***
+                var descriptorsToRemove = services.Where(d =>
+                    d.ServiceType.FullName != null &&
+                    (d.ServiceType.FullName.Contains("Microsoft.EntityFrameworkCore") || // Catches all EF Core services
+                     d.ServiceType.FullName.Contains(typeof(IdentityContext).FullName) || // Specific context type
+                     d.ServiceType.FullName.Contains(typeof(AppDbContext).FullName))     // Specific context type
+                ).ToList();
+
+                // Iterate backwards to safely remove elements as you modify the collection
+                for (int i = services.Count - 1; i >= 0; i--)
+                {
+                    var descriptor = services[i];
+                    if (descriptorsToRemove.Contains(descriptor))
+                    {
+                        services.RemoveAt(i);
+                    }
+                }
+
+                // *** FIX FOR "Scheme already exists: Identity.Application" ***
+                // Remove existing Authentication and Identity related services
+                var authAndIdentityDescriptorsToRemove = services.Where(d =>
+                    d.ServiceType.FullName != null &&
+                    (d.ServiceType.FullName.Contains("Microsoft.AspNetCore.Authentication") ||
+                     d.ServiceType.FullName.Contains("Microsoft.AspNetCore.Identity"))
+                ).ToList();
+
+                for (int i = services.Count - 1; i >= 0; i--)
+                {
+                    var descriptor = services[i];
+                    if (authAndIdentityDescriptorsToRemove.Contains(descriptor))
+                    {
+                        services.RemoveAt(i);
+                    }
+                }
+
+
+                // Now, configure your DbContexts to use SQLite in-memory databases FIRST
+                // This ensures Identity.AddEntityFrameworkStores has the correct context to reference.
+                ConfigureSqliteDbContext<IdentityContext>(services, out _identityConnection);
+                ConfigureSqliteDbContext<AppDbContext>(services, out _appConnection);
+
+                // IMPORTANT: Re-register your Identity services AFTER removing the old ones and setting up DbContexts.
+                // This ensures Identity uses your new SQLite context setup.
+                // The configuration below mirrors what's in your Startup.cs for Identity setup.
+                services.AddIdentity<Core.Domain.Identity.Entities.ApplicationUser, Core.Domain.Identity.Entities.ApplicationRole>(options => {
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequiredLength = 4;
+                })
+                .AddEntityFrameworkStores<IdentityContext>() // This will now use the SQLite IdentityContext you configure above
+                .AddClaimsPrincipalFactory<Infrastructure.Identity.Identity.CustomUserClaimsPrincipalFactory>()
+                .AddDefaultTokenProviders();
+
+                // Ensure the MockSchemeProvider is used for authentication in tests
                 services.AddSingleton<IAuthenticationSchemeProvider, MockSchemeProvider>();
             });
+        }
+
+        private void ConfigureSqliteDbContext<TContext>(IServiceCollection services, out SqliteConnection connection) where TContext : DbContext
+        {
+            var sqliteConnection = new SqliteConnection("DataSource=:memory:");
+            sqliteConnection.Open();
+            connection = sqliteConnection;
+
+            services.AddDbContext<TContext>(options =>
+            {
+                options.UseSqlite(sqliteConnection);
+            });
+
+            using var scope = services.BuildServiceProvider().CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<TContext>();
+            try
+            {
+                context.Database.EnsureDeleted();
+                context.Database.EnsureCreated();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting up {typeof(TContext).Name}: {ex.Message}");
+                throw;
+            }
         }
 
         protected override IHost CreateHost(IHostBuilder builder)
@@ -33,82 +116,13 @@ namespace FunctionalTest.Mvc
             return host;
         }
 
-        private static void SetUpMoqDataBase(IServiceCollection services)
+        protected override void Dispose(bool disposing)
         {
-            SetUpMoqIdentityDatabase(services);
-            SetUpMoqPersistenceDatabase(services);
+            base.Dispose(disposing);
+            _identityConnection?.Close();
+            _identityConnection?.Dispose();
+            _appConnection?.Close();
+            _appConnection?.Dispose();
         }
-
-        private static void SetUpMoqIdentityDatabase(IServiceCollection services)
-        {
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType ==
-                     typeof(DbContextOptions<IdentityContext>));
-            if (descriptor != null)
-            {
-                services.Remove(descriptor);
-            }
-            var serviceProvider = new ServiceCollection()
-                .AddEntityFrameworkSqlite()
-                .BuildServiceProvider();
-            var connection = new SqliteConnection("DataSource=:memory:");
-            connection.Open();
-            services.AddDbContext<IdentityContext>(options =>
-            {
-                options.UseSqlite(connection);
-                options.UseInternalServiceProvider(serviceProvider);
-            });
-
-            var sp = services.BuildServiceProvider();
-            using var scope = sp.CreateScope();
-            using var identityContext = scope.ServiceProvider.GetRequiredService<IdentityContext>();
-            try
-            {
-                identityContext.Database.EnsureDeleted();
-                identityContext.Database.EnsureCreated();
-            }
-            catch (Exception ex)
-            {
-                //Log errors or do anything you think it's needed
-                throw;
-            }
-
-        }
-
-        private static void SetUpMoqPersistenceDatabase(IServiceCollection services)
-        {
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType ==
-                     typeof(DbContextOptions<AppDbContext>));
-            if (descriptor != null)
-            {
-                services.Remove(descriptor);
-            }
-            var serviceProvider = new ServiceCollection()
-                .AddEntityFrameworkSqlite()
-                .BuildServiceProvider();
-            var connection = new SqliteConnection("DataSource=:memory:");
-            connection.Open();
-            services.AddDbContext<AppDbContext>(options =>
-            {
-                options.UseSqlite(connection);
-                options.UseInternalServiceProvider(serviceProvider);
-            });
-            var sp = services.BuildServiceProvider();
-            using var scope = sp.CreateScope();
-            using var appContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            try
-            {
-                appContext.Database.EnsureDeleted();
-                appContext.Database.EnsureCreated();
-            }
-            catch (Exception ex)
-            {
-                //Log errors or do anything you think it's needed
-                throw;
-            }
-        }
-
-       
     }
 }

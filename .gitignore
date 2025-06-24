@@ -77,3 +77,4 @@ documentation/Documentation/log.txt
 /tests/FunctionalTest.WebApi/bin/Debug/net6.0
 /tests/FunctionalTest.WebApi/obj
 /src/Web.Api/logs
+/tests/FunctionalTest.WebApi/bin/Debug/net9.0

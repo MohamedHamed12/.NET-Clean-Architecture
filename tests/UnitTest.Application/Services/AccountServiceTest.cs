@@ -78,7 +78,7 @@ namespace UnitTest.Application.Services
                 ConfirmPassword = "SuperAdmin"
             };
             var rs = await _accountService.RegisterUserAsync(registerUserDto);
-            Assert.AreEqual(true, rs.Succeeded);
+            Assert.That(true, Is.EqualTo(rs.Succeeded));
         }
 
         [Test]
@@ -91,7 +91,7 @@ namespace UnitTest.Application.Services
                 RememberMe = true
             };
             var rs = await _accountService.CookieSignInAsync(loginUserDto);
-            Assert.AreEqual(true, rs.Succeeded);
+            Assert.That(true, Is.EqualTo(rs.Succeeded));
         }
 
         

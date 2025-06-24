@@ -1,7 +1,6 @@
 ﻿using Core.Application.Contracts.DataTransferObjects;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -9,9 +8,8 @@ using System;
 using Core.Application.Contracts.Interfaces;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using LinqToDB.Common;
-using static Web.Framework.Permissions.Permissions;
 using Microsoft.AspNetCore.Authorization;
+using Serilog;
 
 namespace Web.Api.Controllers {
 
@@ -61,7 +59,8 @@ namespace Web.Api.Controllers {
                     return Ok(new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken));
                 }
             }
-            catch {
+            catch(Exception e) {
+                Log.Error(e, e.Message);
                 return BadRequest
                 ("An error occurred in generating the token");
             }

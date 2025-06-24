@@ -6,6 +6,8 @@ using Core.Domain.Persistence.Interfaces;
 using Infrastructure.Persistence.Repositories;
 using NUnit.Framework;
 
+
+
 namespace UnitTest.Persistence.Repositories
 {
     [TestFixture]
@@ -53,9 +55,9 @@ namespace UnitTest.Persistence.Repositories
         public async Task CanGetPosts()
         {
             var items = await _postRepositoryAsync.GetAllAsync();
-
-            Assert.AreEqual(3, items.Count);
-            Assert.AreEqual("third Post", items.FirstOrDefault(x => x.Id == 3)?.Title);
+            
+            Assert.That(3, Is.EqualTo(items.Count));
+            Assert.That("third Post", Is.EqualTo(items.FirstOrDefault(x => x.Id == 3)?.Title));
         }
     }
 }

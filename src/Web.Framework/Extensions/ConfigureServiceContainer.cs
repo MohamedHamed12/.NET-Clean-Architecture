@@ -5,7 +5,7 @@ using Core.Domain.Identity.Permissions;
 using Infrastructure.Identity.Container;
 using Infrastructure.Persistence.Container;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Web.Framework.Authorization;

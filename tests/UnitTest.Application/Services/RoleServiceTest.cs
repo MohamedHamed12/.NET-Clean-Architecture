@@ -80,7 +80,7 @@ namespace UnitTest.Application.Services
                 Name = DefaultApplicationRoles.Basic
             };
             var rs = await _roleService.AddRoleAsync(addRoleDto);
-            Assert.AreEqual(true, rs.Succeeded);
+            Assert.That(true, Is.EqualTo(rs.Succeeded));
         }
 
         [Test]
@@ -88,8 +88,8 @@ namespace UnitTest.Application.Services
         {
             var roleId = "roleId";
             var rs = await _roleService.ManagePermissionsAsync(roleId, "", 1, 12);
-            Assert.AreEqual(true, rs.Succeeded);
-            Assert.GreaterOrEqual(rs.Data.ManagePermissionsDto.Count, Decimal.ToUInt16(1));
+            Assert.That(true, Is.EqualTo(rs.Succeeded));
+            Assert.That(rs.Data.ManagePermissionsDto.Count, Is.GreaterThanOrEqualTo(Decimal.ToUInt16(1)));
         }
     }
 }

@@ -82,8 +82,8 @@ namespace UnitTest.Application.Services
                 new ClaimsPrincipal(new ClaimsIdentity(_permissionHelper.GetAllPermissions(),
                     "AuthScheme"));
             var rs = await _userService.GetAllClaims(claimPrincipal);
-            Assert.AreEqual(true, rs.Succeeded);
-            Assert.GreaterOrEqual(rs.Data.Count, Decimal.ToInt32(1));
+            Assert.That(true, Is.EqualTo(rs.Succeeded));
+            Assert.That(rs.Data.Count, Is.GreaterThanOrEqualTo(Decimal.ToInt32(1)));
         }
 
         [Test]
@@ -93,8 +93,8 @@ namespace UnitTest.Application.Services
                 new ClaimsPrincipal(new ClaimsIdentity(_permissionHelper.GetAllPermissions(),
                     "AuthScheme"));
             var rs = await _userService.GetRolesAsync(claimPrincipal);
-            Assert.AreEqual(true, rs.Succeeded);
-            Assert.AreEqual(4, rs.Data.Count);
+            Assert.That(true, Is.EqualTo(rs.Succeeded));
+            Assert.That(4, Is.EqualTo(rs.Data.Count));
         }
     }
 }
