@@ -1,6 +1,6 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
 WORKDIR /source
 COPY ["src/Web.Mvc/Web.Mvc.csproj", "src/Web.Mvc/"]
 COPY ["src/Web.Framework/Web.Framework.csproj", "src/Web.Framework/"]
@@ -16,7 +16,7 @@ COPY . ./
 RUN dotnet publish "./src/Web.Mvc/Web.Mvc.csproj" -c Release -o app
 
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 80
 
