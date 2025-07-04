@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Core Launch (web)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/Web.Mvc/bin/Debug/net9.0/Web.Mvc.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/Web.Mvc",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "launchBrowser": {
+        "enabled": true,
+        "args": "${auto-detect-url}"
+      },
+  
+      "env": {
+  "ASPNETCORE_ENVIRONMENT": "Development",
+  "ASPNETCORE_URLS": "https://localhost:5005;http://localhost:5004"
+},
+
+      "sourceFileMap": {
+        "/Views": "${workspaceFolder}/src/Web.Mvc/Views"
+      }
+    }
+  ]
+}

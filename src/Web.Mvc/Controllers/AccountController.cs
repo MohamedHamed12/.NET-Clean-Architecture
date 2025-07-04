@@ -62,7 +62,7 @@ namespace Web.Mvc.Controllers
         }
 
         /// <summary>
-        /// Login Post Action method. This method will receive userName, password and will doe further process to complete login process
+        /// Login Post Action method. This method will receive Email, password and will doe further process to complete login process
         /// </summary>
         /// <param name="loginUserDto"></param>
         /// <returns></returns>

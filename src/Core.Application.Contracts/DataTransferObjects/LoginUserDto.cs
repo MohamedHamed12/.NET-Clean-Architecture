@@ -5,9 +5,9 @@ namespace Core.Application.Contracts.DataTransferObjects
     public class LoginUserDto
     {
         [Required]
-        [Display(Name = "UserName")]
-        [DataType(DataType.Text)]
-        public string UserName { get; set; }
+        [Display(Name = "Email")]
+        [EmailAddress]
+        public string Email { get; set; }
 
         [Required]
         [Display(Name = "Password")]

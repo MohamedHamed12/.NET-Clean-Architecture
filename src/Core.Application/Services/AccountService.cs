@@ -5,6 +5,7 @@ using Core.Application.Contracts.Response;
 using Core.Domain.Identity.Entities;
 using System.Threading.Tasks;
 using Core.Domain.Identity.Interfaces;
+using System;
 
 namespace Core.Application.Services
 {
@@ -36,8 +37,8 @@ namespace Core.Application.Services
 
         public async Task<Response<UserIdentityDto>> CookieSignInAsync(LoginUserDto loginUserDto)
         {
-            var user = await _userManager.GetUserByNameAsync(loginUserDto.UserName);
-            if(user == null) return Response<UserIdentityDto>.Fail("UserName does not exists");
+            var user = await _userManager.FindByEmailAsync(loginUserDto.Email);
+            if (user == null) return Response<UserIdentityDto>.Fail("Email does not exists");
             var rs = await _signInManager.PasswordSignInAsync(user, loginUserDto.Password,
                 loginUserDto.RememberMe, false);
             return rs.Succeeded
