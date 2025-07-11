@@ -1,4 +1,5 @@
-﻿using Infrastructure.Identity.Context;
+﻿// File: Factory/AppFactory.cs
+using Infrastructure.Identity.Context;
 using Infrastructure.Identity.Seeds;
 using Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Authentication;
@@ -9,91 +10,68 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Web.Api;
 using Serilog;
+using Web.Api;
 
 namespace FunctionalTest.WebApi.Factory
 {
     public class AppFactory : WebApplicationFactory<Startup>
     {
-        private SqliteConnection _identityConnection;
-        private SqliteConnection _appConnection;
+        private SqliteConnection _identityConnection = null!;
+        private SqliteConnection _appConnection = null!;
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureServices(services =>
             {
-                // *** Aggressively remove ANY service related to EntityFrameworkCore ***
-                // This targets all DbContexts, DbContextOptions, and potentially internal EF Core services
-                // that might be implicitly tied to a specific provider (like SQL Server).
                 var efCoreDescriptorsToRemove = services.Where(d =>
                     d.ServiceType.FullName != null &&
-                    (d.ServiceType.FullName.Contains("Microsoft.EntityFrameworkCore") || // Catches all EF Core services
-                     d.ServiceType.FullName.Contains(typeof(IdentityContext).FullName) || // Specific context type
-                     d.ServiceType.FullName.Contains(typeof(AppDbContext).FullName))     // Specific context type
+                    (d.ServiceType.FullName.Contains("Microsoft.EntityFrameworkCore") ||
+                     d.ServiceType.FullName.Contains(typeof(IdentityContext).FullName) ||
+                     d.ServiceType.FullName.Contains(typeof(AppDbContext).FullName))
                 ).ToList();
 
-                // Iterate backwards to safely remove elements as you modify the collection
-                for (int i = services.Count - 1; i >= 0; i--)
+                foreach (var descriptor in efCoreDescriptorsToRemove)
                 {
-                    var descriptor = services[i];
-                    if (efCoreDescriptorsToRemove.Contains(descriptor))
-                    {
-                        services.RemoveAt(i);
-                    }
+                    services.Remove(descriptor);
                 }
 
-                // *** Remove existing Authentication and Identity related services ***
-                // This prevents "Scheme already exists" errors by clearing prior registrations.
                 var authAndIdentityDescriptorsToRemove = services.Where(d =>
                     d.ServiceType.FullName != null &&
                     (d.ServiceType.FullName.Contains("Microsoft.AspNetCore.Authentication") ||
                      d.ServiceType.FullName.Contains("Microsoft.AspNetCore.Identity"))
                 ).ToList();
 
-                for (int i = services.Count - 1; i >= 0; i--)
+                foreach (var descriptor in authAndIdentityDescriptorsToRemove)
                 {
-                    var descriptor = services[i];
-                    if (authAndIdentityDescriptorsToRemove.Contains(descriptor))
-                    {
-                        services.RemoveAt(i);
-                    }
+                    services.Remove(descriptor);
                 }
 
-                // Now, configure your DbContexts to use SQLite in-memory databases FIRST
-                // This ensures AddEntityFrameworkStores has the correct context to reference.
-                ConfigureSqliteDbContext<IdentityContext>(services, out _identityConnection);
-                ConfigureSqliteDbContext<AppDbContext>(services, out _appConnection);
+                _identityConnection = CreateInMemoryDatabase<IdentityContext>(services);
+                _appConnection = CreateInMemoryDatabase<AppDbContext>(services);
 
-                // IMPORTANT: Re-register your Identity services AFTER setting up DbContexts.
-                // The configuration below mirrors what's typically in your Startup.cs for Identity setup.
-                services.AddIdentity<Core.Domain.Identity.Entities.ApplicationUser, Core.Domain.Identity.Entities.ApplicationRole>(options => {
+                services.AddIdentity<Core.Domain.Identity.Entities.ApplicationUser, Core.Domain.Identity.Entities.ApplicationRole>(options =>
+                {
                     options.Password.RequireDigit = false;
                     options.Password.RequireNonAlphanumeric = false;
                     options.Password.RequireUppercase = false;
                     options.Password.RequiredLength = 4;
                 })
-                .AddEntityFrameworkStores<IdentityContext>() // This will now use the SQLite IdentityContext you configure above
+                .AddEntityFrameworkStores<IdentityContext>()
                 .AddClaimsPrincipalFactory<Infrastructure.Identity.Identity.CustomUserClaimsPrincipalFactory>()
                 .AddDefaultTokenProviders();
 
-                // Ensure the MockSchemeProvider is used for authentication in tests
                 services.AddSingleton<IAuthenticationSchemeProvider, MockSchemeProvider>();
             });
         }
 
-        private void ConfigureSqliteDbContext<TContext>(IServiceCollection services, out SqliteConnection connection) where TContext : DbContext
+        private SqliteConnection CreateInMemoryDatabase<TContext>(IServiceCollection services) where TContext : DbContext
         {
-            var sqliteConnection = new SqliteConnection("DataSource=:memory:");
-            sqliteConnection.Open();
-            connection = sqliteConnection;
+            var connection = new SqliteConnection("DataSource=:memory:");
+            connection.Open();
 
-            services.AddDbContext<TContext>(options =>
-            {
-                options.UseSqlite(sqliteConnection);
-            });
+            services.AddDbContext<TContext>(options => options.UseSqlite(connection));
 
-            // Ensure the database is created and migrated within the test scope
             using var scope = services.BuildServiceProvider().CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<TContext>();
             try
@@ -106,12 +84,13 @@ namespace FunctionalTest.WebApi.Factory
                 Log.Error(ex, ex.Message);
                 throw;
             }
+
+            return connection;
         }
 
         protected override IHost CreateHost(IHostBuilder builder)
         {
             var host = base.CreateHost(builder);
-            // Ensure seeding happens after our database setup
             IdentityMigrationManager.SeedDatabaseAsync(host).GetAwaiter().GetResult();
             return host;
         }

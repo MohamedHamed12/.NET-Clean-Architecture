@@ -1,4 +1,5 @@
-﻿using Core.Domain.Identity.Constants;
+﻿// File: Factory/LocalAuthenticationHandler.cs
+using Core.Domain.Identity.Constants;
 using Core.Domain.Identity.Entities;
 using Core.Domain.Identity.Permissions;
 using Microsoft.AspNetCore.Authentication;
@@ -12,28 +13,26 @@ namespace FunctionalTest.WebApi.Factory
 {
     public class LocalAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-
         private readonly ApplicationUser _appUser = DefaultApplicationUsers.GetSuperUser();
 
         public LocalAuthenticationHandler(
-            IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger,
-            UrlEncoder encoder, ISystemClock clock) : base(options, logger, encoder, clock)
+            IOptionsMonitor<AuthenticationSchemeOptions> options,
+            ILoggerFactory logger,
+            UrlEncoder encoder) 
+            : base(options, logger, encoder)
         {
         }
 
         private List<Claim> UserClaims()
         {
-            var claims = new List<Claim>
+            return new List<Claim>
             {
-                new(ClaimTypes.NameIdentifier, _appUser.Id),
-                new(ClaimTypes.Name, _appUser.UserName)
+                new(ClaimTypes.NameIdentifier, _appUser.Id ?? string.Empty),
+                new(ClaimTypes.Name, _appUser.UserName ?? string.Empty)
             };
-            return claims;
         }
-        private List<Claim> AllRolesClaims()
-        {
-            return DefaultApplicationRoles.GetDefaultRoleClaims();
-        }
+
+        private List<Claim> AllRolesClaims() => DefaultApplicationRoles.GetDefaultRoleClaims();
 
         private List<Claim> AllPermissionsClaims()
         {
@@ -43,16 +42,17 @@ namespace FunctionalTest.WebApi.Factory
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            var claims = new List<Claim>();
+            claims.AddRange(UserClaims());
+            claims.AddRange(AllRolesClaims());
+            claims.AddRange(AllPermissionsClaims());
 
-            var allClaims = new List<Claim>();
-            allClaims.AddRange(UserClaims());
-            allClaims.AddRange(AllRolesClaims());
-            allClaims.AddRange(AllPermissionsClaims());
-            var authenticationTicket = new AuthenticationTicket(
-                new ClaimsPrincipal(new ClaimsIdentity(allClaims, IdentityConstants.ApplicationScheme)),
+            var ticket = new AuthenticationTicket(
+                new ClaimsPrincipal(new ClaimsIdentity(claims, IdentityConstants.ApplicationScheme)),
                 new AuthenticationProperties(),
                 IdentityConstants.ApplicationScheme);
-            return Task.FromResult(AuthenticateResult.Success(authenticationTicket));
+
+            return Task.FromResult(AuthenticateResult.Success(ticket));
         }
     }
 }

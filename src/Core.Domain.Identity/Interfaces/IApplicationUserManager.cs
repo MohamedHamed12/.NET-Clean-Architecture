@@ -9,7 +9,7 @@ namespace Core.Domain.Identity.Interfaces
 {
     public interface IApplicationUserManager
     {
-        Task<IdentityResponse> RegisterUserAsync(ApplicationUser user);
+        Task<IdentityResponse> RegisterUserAsync(ApplicationUser user,string password);
         Task<ApplicationUser> FindByEmailAsync(string email);
         Task<ApplicationUser> GetUserByNameAsync(string userName);
         Task<ApplicationUser> GetUserByIdAsync(string userId);

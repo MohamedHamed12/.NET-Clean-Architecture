@@ -21,7 +21,7 @@ namespace Infrastructure.Identity.Managers
 
         }
 
-        public async Task<IdentityResponse> RegisterUserAsync(ApplicationUser user)
+        public async Task<IdentityResponse> RegisterUserAsync(ApplicationUser user,string password)
         {
             if (user.Email != null && await _userManager.FindByEmailAsync(user.Email) != null)
             {
@@ -32,7 +32,7 @@ namespace Infrastructure.Identity.Managers
             {
                 return IdentityResponse.Fail("User Name already exists! Please try a different one");
             }
-            var rs = await _userManager.CreateAsync(user);
+            var rs = await _userManager.CreateAsync(user,password);
             return rs.ToIdentityResponse();
         }
 

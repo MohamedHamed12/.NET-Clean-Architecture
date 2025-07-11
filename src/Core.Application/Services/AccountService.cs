@@ -29,7 +29,7 @@ namespace Core.Application.Services
         public async Task<Response<UserIdentityDto>> RegisterUserAsync(RegisterUserDto registerUserDto)
         {
             var user = _mapper.Map<ApplicationUser>(registerUserDto);
-            var rs = await _userManager.RegisterUserAsync(user);
+            var rs = await _userManager.RegisterUserAsync(user,registerUserDto.Password);
             return rs.Succeeded
                 ? Response<UserIdentityDto>.Success(new UserIdentityDto {Id = user.Id}, rs.ToString())
                 : Response<UserIdentityDto>.Fail(rs.ToString());
