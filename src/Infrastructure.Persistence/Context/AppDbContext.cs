@@ -1,14 +1,13 @@
-﻿using Core.Domain.Persistence.Common;
+using Core.Domain.Persistence.Common;
 using Core.Domain.Persistence.Entities;
 using Core.Domain.Persistence.Enums;
 using Infrastructure.Persistence.Helpers;
-using LinqToDB.Data;
-using LinqToDB.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.Persistence.Context
 {
@@ -16,16 +15,13 @@ namespace Infrastructure.Persistence.Context
     {
         private readonly ICurrentUserInfo _currentUser;
 
-        /// <summary>
-        ///     Linq2Db instance of DbContext. Use it for bulk insert and bulk fetch. 
-        /// </summary>
-        public DataConnection Linq2Db { get; }
+        private readonly IConfiguration _configuration;
 
-        public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserInfo currentUser)
+        public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserInfo currentUser, IConfiguration configuration)
             : base(options)
         {
             _currentUser = currentUser;
-            Linq2Db = options.CreateLinqToDbConnection();
+            _configuration = configuration;
         }
 
         public DbSet<Audit> Audits { get; set; }
@@ -36,6 +32,11 @@ namespace Infrastructure.Persistence.Context
         public DbSet<Tag> Tags { get; set; }
         public DbSet<PostTag> PostTags { get; set; }
        
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlite(_configuration.GetConnectionString("DefaultConnection"));
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

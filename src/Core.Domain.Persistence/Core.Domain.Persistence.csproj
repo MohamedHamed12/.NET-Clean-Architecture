@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-  </PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup> 
 
   <ItemGroup>
     <Folder Include="Options\" />
@@ -13,7 +14,6 @@
 
 
 
-    <PackageReference Include="linq2db.EntityFrameworkCore" Version="9.0.0" />
   </ItemGroup>
 
 </Project>

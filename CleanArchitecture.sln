@@ -1,4 +1,9 @@
-﻿
+{
+  "sdk": {
+    "version": "8.0.100"
+  }
+}
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322

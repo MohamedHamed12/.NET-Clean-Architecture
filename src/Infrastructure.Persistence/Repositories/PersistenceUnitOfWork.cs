@@ -1,11 +1,8 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Core.Domain.Persistence.Entities;
 using Core.Domain.Persistence.Interfaces;
 using Infrastructure.Persistence.Context;
-using LinqToDB.Data;
-using LinqToDB.EntityFrameworkCore;
-
 namespace Infrastructure.Persistence.Repositories
 {
     public class PersistenceUnitOfWork : IPersistenceUnitOfWork
@@ -16,7 +13,6 @@ namespace Infrastructure.Persistence.Repositories
         public ICategoryRepositoryAsync Category { get; }
         public ITagRepositoryAsync Tag { get; }
         public IRepositoryAsync<Comment> Comment { get; }
-        public DataConnection Linq2Db { get; }
         public PersistenceUnitOfWork(AppDbContext appDbContext,
                                         IPostRepositoryAsync post, 
                                         IRepositoryAsync<Comment> comment,
@@ -24,7 +20,6 @@ namespace Infrastructure.Persistence.Repositories
                                         ITagRepositoryAsync tag)
         {
             _dbContext = appDbContext;
-            Linq2Db = _dbContext.CreateLinqToDbConnection();
             Post = post;
             Comment = comment;
             Category = category;

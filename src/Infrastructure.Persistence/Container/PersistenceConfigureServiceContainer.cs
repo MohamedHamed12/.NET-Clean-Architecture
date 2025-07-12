@@ -1,4 +1,4 @@
-﻿using Core.Domain.Persistence.Interfaces;
+using Core.Domain.Persistence.Interfaces;
 using Infrastructure.Persistence.Context;
 using Infrastructure.Persistence.Helpers;
 using Infrastructure.Persistence.Repositories;
@@ -14,9 +14,9 @@ namespace Infrastructure.Persistence.Container
         public static void AddDbContext(IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(
+                options.UseSqlite(
                     Environment.GetEnvironmentVariable("PersistenceConnection") ??
-                    configuration.GetConnectionString("PersistenceConnection"),
+                    configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
         }
         public static void AddRepositories(IServiceCollection services)
