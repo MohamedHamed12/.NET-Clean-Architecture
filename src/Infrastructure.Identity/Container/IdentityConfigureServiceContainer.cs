@@ -1,4 +1,4 @@
-﻿using Core.Domain.Identity.Entities;
+using Core.Domain.Identity.Entities;
 using Core.Domain.Identity.Interfaces;
 using Infrastructure.Identity.Context;
 using Infrastructure.Identity.Identity;
@@ -16,8 +16,8 @@ namespace Infrastructure.Identity.Container
         public static void AddDbContext(IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<IdentityContext>(options =>
-                options.UseSqlServer(
-                    Environment.GetEnvironmentVariable("PersistenceConnection") ?? 
+                options.UseSqlite(
+                    Environment.GetEnvironmentVariable("IdentityConnection") ?? 
                     configuration.GetConnectionString("IdentityConnection"),
                     b => b.MigrationsAssembly(typeof(IdentityContext).Assembly.FullName)));
             
